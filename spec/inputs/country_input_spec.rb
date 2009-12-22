@@ -10,6 +10,20 @@ describe 'country input' do
     mock_everything
   end
 
+  describe 'with a block given' do
+    before do
+      semantic_form_for(@new_post) do |builder|
+        builder.stub!(:country_select).and_return("<select><option>...</option></select>")
+        builder.input(:country, :as => :country) do |html|
+          concat "<span class='country_select_custom'>#{html}</span>"
+        end
+      end
+    end
+    it "should concatinate field" do
+      output_buffer.should have_tag("form li span.country_select_custom select option")
+    end
+  end
+
   describe "when country_select is not available as a helper from a plugin" do
     
     it "should raise an error, sugesting the author installs a plugin" do

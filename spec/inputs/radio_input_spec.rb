@@ -146,4 +146,16 @@ describe 'radio input' do
 
   end
 
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      @new_post.stub!(:author_ids).and_return(nil)
+      semantic_form_for(@new_post) do |builder|
+        builder.input :authors, :as => :radio do |html|
+          concat "<span class='custom'>#{html}</span>"
+        end
+      end
+      output_buffer.should have_tag('form li.radio span.custom input[@type=radio]')
+    end
+  end
 end

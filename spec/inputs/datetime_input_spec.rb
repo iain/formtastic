@@ -151,5 +151,16 @@ describe 'datetime input' do
     end
   end
 
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      semantic_form_for(@new_post) do |builder|
+        builder.input :publish_at, :as => :datetime do |html|
+          concat "<input type='text' />"
+        end
+      end
+      output_buffer.should have_tag('form li input[@type=text]')
+    end
+  end
 end
 

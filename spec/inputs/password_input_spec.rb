@@ -43,4 +43,16 @@ describe 'password input' do
     it_should_have_input_with_name("project[title]")
   end
 
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      semantic_form_for(@new_post) do |builder|
+        builder.input :title, :as => :password do |html|
+          concat "<span class='custom'>#{html}</span>"
+        end
+      end
+      output_buffer.should have_tag('form li.password span.custom input[@type=password]')
+    end
+  end
+
 end

@@ -42,4 +42,15 @@ describe 'date input' do
   it_should_select_existing_datetime_else_current(:year, :month, :day)
   it_should_select_explicit_default_value_if_set(:year, :month, :day)
 
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      semantic_form_for(@new_post) do |builder|
+        builder.input :publish_at, :as => :date do |html|
+          concat "<input type='text' />"
+        end
+      end
+      output_buffer.should have_tag('form li input[@type=text]')
+    end
+  end
 end

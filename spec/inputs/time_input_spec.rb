@@ -41,4 +41,15 @@ describe 'time input' do
   it_should_select_existing_datetime_else_current(:hour, :minute, :second)
   it_should_select_explicit_default_value_if_set(:hour, :minute, :second)
 
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      semantic_form_for(@new_post) do |builder|
+        builder.input :publish_at, :as => :time do |html|
+          concat "<input type='text' />"
+        end
+      end
+      output_buffer.should have_tag('form li input[@type=text]')
+    end
+  end
 end

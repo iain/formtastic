@@ -99,4 +99,16 @@ describe 'time_zone input' do
 
   end
 
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      semantic_form_for(@new_post) do |builder|
+        builder.input :time_zone, :as => :time_zone do |html|
+          concat "<span class='custom'>#{html}</span>"
+        end
+      end
+      output_buffer.should have_tag('form li span.custom select')
+    end
+  end
+
 end

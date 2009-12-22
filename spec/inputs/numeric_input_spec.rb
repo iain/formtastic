@@ -39,6 +39,19 @@ describe 'numeric input' do
     it_should_have_input_with_type(:text)
     it_should_have_input_with_name("project[title]")
   end
-  
+
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      semantic_form_for(@new_post) do |builder|
+        builder.input :title, :as => :numeric do |html|
+          concat "<span class='custom'>#{html}</span>"
+        end
+      end
+      output_buffer.should have_tag('form li.numeric span.custom input[@type=text]')
+    end
+  end
+
+
 end
 

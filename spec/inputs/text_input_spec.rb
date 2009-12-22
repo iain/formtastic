@@ -28,6 +28,18 @@ describe 'text input' do
     end
     output_buffer.should have_tag("form li textarea.myclass")
   end
-    
+
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      semantic_form_for(@new_post) do |builder|
+        builder.input :body do |html|
+          concat "<span class='custom'>#{html}</span>"
+        end
+      end
+      output_buffer.should have_tag('form li.text span.custom textarea')
+    end
+  end
+
 end
 

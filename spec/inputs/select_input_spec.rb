@@ -456,4 +456,18 @@ describe 'select input' do
     end
   end
 
+  describe 'with a block given' do
+    it "should allow extra control" do
+      @output_buffer = ''
+      @some_meta_descriptions = ["One", "Two", "Three"]
+      @new_post.stub!(:meta_description).any_number_of_times
+      semantic_form_for(@new_post) do |builder|
+        builder.input :meta_description, :collection => @some_meta_descriptions do |html|
+          concat "<span class='custom'>#{html}</span>"
+        end
+      end
+      output_buffer.should have_tag('form li.select span.custom option')
+    end
+  end
+
 end

@@ -74,7 +74,7 @@ module Formtastic #:nodoc:
     #     <% end %>
     #   <% end %>
     #
-    def input(method, options = {})
+    def input(method, options = {}, &block)
       options[:required] = method_required?(method) unless options.key?(:required)
       options[:as]     ||= default_input_type(method, options)
 
@@ -94,10 +94,12 @@ module Formtastic #:nodoc:
       input_parts.delete(:errors) if options[:as] == :hidden
 
       list_item_content = input_parts.map do |type|
-        send(:"inline_#{type}_for", method, options)
+        send(:"inline_#{type}_for", method, options, &block)
       end.compact.join("\n")
 
-      return template.content_tag(:li, list_item_content, wrapper_html)
+      html = template.content_tag(:li, list_item_content, wrapper_html)
+      template.concat html if block_given?
+      return html
     end
 
     # Creates an input fieldset and ol tag wrapping for use around a set of inputs.  It can be
@@ -521,37 +523,39 @@ module Formtastic #:nodoc:
         if_condition ? !!condition : !condition
       end
 
-      def basic_input_helper(form_helper_method, type, method, options) #:nodoc:
+      def basic_input_helper(form_helper_method, type, method, options, &block) #:nodoc:
         html_options = options.delete(:input_html) || {}
         html_options = default_string_options(method, type).merge(html_options) if [:numeric, :string, :password].include?(type)
 
-        self.label(method, options_for_label(options)) <<
-        self.send(form_helper_method, method, html_options)
+        input = self.send(form_helper_method, method, html_options)
+        input = template.capture(input, &block) if block_given?
+
+        self.label(method, options_for_label(options)) << input
       end
 
       # Outputs a label and standard Rails text field inside the wrapper.
-      def string_input(method, options)
-        basic_input_helper(:text_field, :string, method, options)
+      def string_input(method, options, &block)
+        basic_input_helper(:text_field, :string, method, options, &block)
       end
 
       # Outputs a label and standard Rails password field inside the wrapper.
-      def password_input(method, options)
-        basic_input_helper(:password_field, :password, method, options)
+      def password_input(method, options, &block)
+        basic_input_helper(:password_field, :password, method, options, &block)
       end
 
       # Outputs a label and standard Rails text field inside the wrapper.
-      def numeric_input(method, options)
-        basic_input_helper(:text_field, :numeric, method, options)
+      def numeric_input(method, options, &block)
+        basic_input_helper(:text_field, :numeric, method, options, &block)
       end
 
       # Ouputs a label and standard Rails text area inside the wrapper.
-      def text_input(method, options)
-        basic_input_helper(:text_area, :text, method, options)
+      def text_input(method, options, &block)
+        basic_input_helper(:text_area, :text, method, options, &block)
       end
 
       # Outputs a label and a standard Rails file field inside the wrapper.
-      def file_input(method, options)
-        basic_input_helper(:file_field, :file, method, options)
+      def file_input(method, options, &block)
+        basic_input_helper(:file_field, :file, method, options, &block)
       end
 
       # Outputs a hidden field inside the wrapper, which should be hidden with CSS.
@@ -670,7 +674,7 @@ module Formtastic #:nodoc:
       #
       #   f.input :author, :group_by => :continents, :group_label_method => :something_different
       #
-      def select_input(method, options)
+      def select_input(method, options, &block)
         html_options = options.delete(:input_html) || {}
         options = set_include_blank(options)
         html_options[:multiple] = html_options[:multiple] || options.delete(:multiple)
@@ -705,7 +709,7 @@ module Formtastic #:nodoc:
 
           self.select(input_name, collection, strip_formtastic_options(options), html_options)
         end
-
+        select_html = template.capture(select_html, &block) if block_given?
         self.label(method, options_for_label(options).merge(:input_name => input_name)) << select_html
       end
       alias :boolean_select_input :select_input
@@ -725,13 +729,16 @@ module Formtastic #:nodoc:
       #  
       #   f.input :my_favorite_time_zone, :as => :time_zone, :selected => 'Singapore'
       #
-      def time_zone_input(method, options)
+      def time_zone_input(method, options, &block)
         html_options = options.delete(:input_html) || {}
         selected_value = options.delete(:selected)
 
-        self.label(method, options_for_label(options)) <<
-        self.time_zone_select(method, options.delete(:priority_zones),
+        html = self.time_zone_select(method, options.delete(:priority_zones),
           strip_formtastic_options(options).merge(:default => selected_value), html_options)
+
+        html = template.capture(html, &block) if block_given?
+
+        self.label(method, options_for_label(options)) << html
       end
 
       # Outputs a fieldset containing a legend for the label text, and an ordered list (ol) of list
@@ -798,7 +805,7 @@ module Formtastic #:nodoc:
       # button / label combination to contain a class with the value of the radio button (useful for
       # applying specific CSS or Javascript to a particular radio button).
       #
-      def radio_input(method, options)
+      def radio_input(method, options, &block)
         collection   = find_collection_for_column(method, options)
         html_options = strip_formtastic_options(options).merge(options.delete(:input_html) || {})
 
@@ -825,7 +832,7 @@ module Formtastic #:nodoc:
           template.content_tag(:li, li_content, li_options)
         end
 
-        field_set_and_list_wrapping_for_method(method, options.merge(:label_for => input_ids.first), list_item_content)
+        field_set_and_list_wrapping_for_method(method, options.merge(:label_for => input_ids.first), list_item_content, &block)
       end
       alias :boolean_radio_input :radio_input
 
@@ -842,9 +849,9 @@ module Formtastic #:nodoc:
       #
       # Some of Rails' options for select_date are supported, but not everything yet.
       #
-      def date_input(method, options)
+      def date_input(method, options, &block)
         options = set_include_blank(options)
-        date_or_datetime_input(method, options.merge(:discard_hour => true))
+        date_or_datetime_input(method, options.merge(:discard_hour => true), &block)
       end
 
       # Outputs a fieldset with a legend for the method label, and a ordered list (ol) of list
@@ -861,9 +868,9 @@ module Formtastic #:nodoc:
       #
       # Some of Rails' options for select_date are supported, but not everything yet.
       #
-      def datetime_input(method, options)
+      def datetime_input(method, options, &block)
         options = set_include_blank(options)
-        date_or_datetime_input(method, options)
+        date_or_datetime_input(method, options, &block)
       end
 
       # Outputs a fieldset with a legend for the method label, and a ordered list (ol) of list
@@ -879,9 +886,9 @@ module Formtastic #:nodoc:
       #
       # Some of Rails' options for select_time are supported, but not everything yet.
       #
-      def time_input(method, options)
+      def time_input(method, options, &block)
         options = set_include_blank(options)
-        date_or_datetime_input(method, options.merge(:discard_year => true, :discard_month => true, :discard_day => true))
+        date_or_datetime_input(method, options.merge(:discard_year => true, :discard_month => true, :discard_day => true), &block)
       end
 
       # <fieldset>
@@ -916,7 +923,7 @@ module Formtastic #:nodoc:
       #
       # This is an absolute abomination, but so is the official Rails select_date().
       #
-      def date_or_datetime_input(method, options)
+      def date_or_datetime_input(method, options, &block)
         position = { :year => 1, :month => 2, :day => 3, :hour => 4, :minute => 5, :second => 6 }
         i18n_date_order = ::I18n.t(:order, :scope => [:date])
         i18n_date_order = nil unless i18n_date_order.is_a?(Array)
@@ -956,7 +963,7 @@ module Formtastic #:nodoc:
           end
         end
 
-        hidden_fields_capture << field_set_and_list_wrapping_for_method(method, options.merge(:label_for => input_ids.first), list_items_capture)
+        hidden_fields_capture << field_set_and_list_wrapping_for_method(method, options.merge(:label_for => input_ids.first), list_items_capture, &block)
       end
 
       # Outputs a fieldset containing a legend for the label text, and an ordered list (ol) of list
@@ -1032,7 +1039,7 @@ module Formtastic #:nodoc:
       # combination to contain a class with the value of the radio button (useful for applying specific 
       # CSS or Javascript to a particular checkbox).
       #
-      def check_boxes_input(method, options)
+      def check_boxes_input(method, options, &block)
         collection = find_collection_for_column(method, options)
         html_options = options.delete(:input_html) || {}
 
@@ -1064,7 +1071,7 @@ module Formtastic #:nodoc:
           template.content_tag(:li, li_content, li_options)
         end
 
-        field_set_and_list_wrapping_for_method(method, options.merge(:label_for => input_ids.first), list_item_content)
+        field_set_and_list_wrapping_for_method(method, options.merge(:label_for => input_ids.first), list_item_content, &block)
       end
 
       # Outputs a country select input, wrapping around a regular country_select helper. 
@@ -1081,14 +1088,17 @@ module Formtastic #:nodoc:
       #   f.input :location, :as => :country # use Formtastic::SemanticFormBuilder.priority_countries array for the priority countries
       #   f.input :location, :as => :country, :priority_countries => /Australia/ # set your own
       #
-      def country_input(method, options)
+      def country_input(method, options, &block)
         raise "To use the :country input, please install a country_select plugin, like this one: http://github.com/rails/iso-3166-country-select" unless self.respond_to?(:country_select)
       
         html_options = options.delete(:input_html) || {}
         priority_countries = options.delete(:priority_countries) || @@priority_countries
 
-        self.label(method, options_for_label(options)) <<
-        self.country_select(method, priority_countries, strip_formtastic_options(options), html_options)
+        html = self.country_select(method, priority_countries, strip_formtastic_options(options), html_options)
+
+        html = template.capture(html, &block) if block_given?
+
+        self.label(method, options_for_label(options)) << html
       end
 
       # Outputs a label containing a checkbox and the label text. The label defaults
@@ -1101,13 +1111,16 @@ module Formtastic #:nodoc:
       #  
       #   f.input :allow_comments, :as => :boolean, :selected => true   # override any default value: selected/checked
       #
-      def boolean_input(method, options)
+      def boolean_input(method, options, &block)
         html_options = options.delete(:input_html) || {}
         checked = options.key?(:checked) ? options[:checked] : options[:selected]
         html_options[:checked] = checked == true if [:selected, :checked].any? { |k| options.key?(k) }
 
         input = self.check_box(method, strip_formtastic_options(options).merge(html_options),
                                options.delete(:checked_value) || '1', options.delete(:unchecked_value) || '0')
+
+        input = template.capture(input, &block) if block_given?
+
         options = options_for_label(options)
 
         # the label() method will insert this nested input into the label at the last minute
@@ -1117,8 +1130,8 @@ module Formtastic #:nodoc:
       end
 
       # Generates an input for the given method using the type supplied with :as.
-      def inline_input_for(method, options)
-        send(:"#{options.delete(:as)}_input", method, options)
+      def inline_input_for(method, options, &block)
+        send(:"#{options.delete(:as)}_input", method, options, &block)
       end
 
       # Generates hints for the given method using the text supplied in :hint.
@@ -1233,8 +1246,10 @@ module Formtastic #:nodoc:
       # Also generates a fieldset and an ordered list but with label based in
       # method. This methods is currently used by radio and datetime inputs.
       #
-      def field_set_and_list_wrapping_for_method(method, options, contents) #:nodoc:
+      def field_set_and_list_wrapping_for_method(method, options, contents, &block) #:nodoc:
         contents = contents.join if contents.respond_to?(:join)
+
+        contents = template.capture(contents, &block) if block_given?
 
         template.content_tag(:fieldset,
             template.content_tag(:legend,

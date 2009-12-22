@@ -56,6 +56,32 @@ describe 'boolean input' do
     output_buffer.should have_tag('form li label input[@name="project[allow_comments]"]')
   end
 
+  describe 'with a block given' do
+
+    before do
+      @output_buffer = ''
+    end
+
+    it "should concat" do
+      semantic_form_for(@new_post) do |builder|
+        builder.input(:allow_comments, :as => :boolean) do |html|
+          concat "<span class='custom_content'></span>"
+        end
+      end
+      output_buffer.should have_tag("form li label span.custom_content")
+    end
+
+    it "should pass the checkbox html as block argument" do
+      semantic_form_for(@new_post) do |builder|
+        builder.input(:allow_comments, :as => :boolean) do |html|
+          concat "<span class='custom_content'>#{html}</span>"
+        end
+      end
+      output_buffer.should have_tag("form li label span.custom_content input[@type='checkbox']")
+    end
+
+  end
+
   describe 'when :selected is set' do
     before do
       @output_buffer = ''

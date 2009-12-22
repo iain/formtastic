@@ -4,6 +4,21 @@ require File.dirname(__FILE__) + '/../spec_helper'
 describe 'check_boxes input' do
   
   include FormtasticSpecHelper
+
+  describe "with a block given" do
+    it "should concatinate the contents" do
+      @output_buffer = ''
+      mock_everything
+      semantic_form_for(@fred) do |builder|
+        builder.input(:posts, :as => :check_boxes, :value_as_class => true) do |html|
+          html.should have_tag("li")
+          html.should_not have_tag("ul")
+          concat(html << "<li class='extra_list_item'>foo</li>")
+        end
+      end
+      output_buffer.should have_tag("form ol li.extra_list_item")
+    end
+  end
   
   describe 'for a has_many association' do
     before do
